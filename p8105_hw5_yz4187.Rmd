@@ -15,7 +15,7 @@ library(tidyverse)
 
 ```{r}
 homicide_df = 
-  read_csv("./data/homicide-data.csv", na = c("", "Unknown")) %>%
+  read_csv("./homicide-data.csv", na = c("", "Unknown")) %>%
   mutate(
     city_state = str_c(city, state),
     resolution = case_when(
@@ -127,12 +127,35 @@ homicide_df %>%
 
 ### Problem 2
 
-```{r}
-tibble(
-  files = list.files("./data/zip_data/")
-)
+```{r, warning=FALSE, message=FALSE}
+files = list.files("./data")
+df = 
+  data_frame(files = files) %>% 
+  mutate(
+    file_contents = map(files, ~read_csv(file.path("./data", .)))
+    ) %>%
+  unnest() %>% 
+  pivot_longer(week_1:week_8, 
+             names_to = "week",
+             names_prefix = "week_",
+             values_to = "measure") %>% 
+  separate(files, sep = ".c", into = c("files", "remove")) %>% 
+  select(-remove) %>% 
+  separate(files, into = c("group", "subject_id"), sep = "_") %>% 
+  mutate_all(~gsub("week_", "", .)) %>% 
+  mutate(week = as.numeric(week)) %>% 
+  mutate(measure = as.numeric(measure))
+df %>%
+  ggplot(aes(x = week, y = measure , color = group, group = subject_id)) + 
+  geom_path() + 
+  labs(
+    title = "Observation Measurement: Spaghetti plot",
+    x = "Week",
+    y = "Observation",
+    caption = "Zip_data")
 ```
 
+**Comment:** According to the plot, the measurement value of control group is generally larger than the experiment group.
 
 
 ### Problem 3
@@ -166,11 +189,8 @@ fill_in_missing = function(x) {
 }
 iris_cleaned = map(iris_with_missing, fill_in_missing) %>%
   as.tibble()
-knitr::kable(iris_cleaned)
-
 sum(is.na(iris_cleaned))
-
-
+knitr::kable(iris_cleaned)
 ```
 
 
